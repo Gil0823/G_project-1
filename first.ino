@@ -28,6 +28,8 @@ void standup(int);
 void standown(int); 
 bool checkAllDead(void);  // 모든 과녁이 쓰러졌는지 확인함(모두 쓰러져있을시 true를 반환한다) 
 bool checkStopCommend(void);  // 커맨더에서 게임중지명령 수신여부를 체크함 
+void moterdown_All(void);  // 모든 모터 등록 해체
+void moterup_All(void);  // 모든 모터 재등록
  
 void setup(void) {
     Serial.begin(9600); 
@@ -38,7 +40,6 @@ void setup(void) {
         resetTarget(&target[i]);
         target[i].score = score[i];  // 과녁별 고유점수 부가 
         target[i].moter = moter[i];  // 과녁별 서보모터객체 부여 
-        target[i].moter.attach(moter_pin[i]);  // 서보모터 등록
     }
     for(i = 0; i < NUM_T; i++) {
         pinMode(senser_pin[i], INPUT);  // 충격감지센서 등록 
@@ -51,11 +52,14 @@ void loop(void) {
     if(Serial.available() > 0) {  // 커맨더 으로부터 명령대기 
         recieve = Serial.read();  // 수신된 명령을 recieve에 저장  
         Serial.println("Recieve!");  // 명령 받앋을시 시리얼모니터에 출력(디버그용으로 작성함) 
+        moterup_All();
+        delay(1000);
         
         switch(recieve) {
             case GAME_START:
                 for(i = 0; i < NUM_T; i++) {
                     standup(i);
+                    
                 }
                 break;
             case GAME_STOP:
@@ -72,8 +76,9 @@ void loop(void) {
            default:
                ;  // 빈문장 
         }
+        moterdown_All();
     }
-    delay(500);
+    delay(100);
 }
 
 void gamemode_0(void) {  // 조율모드
@@ -169,6 +174,7 @@ void resetTarget(Target * obj) {
 }
  
 void standup(int pin) {
+    Serial.println("업업업");
     target[pin].moter.write(10);
     target[pin].stat_stand = 1;  // 기립상태 갱신  
 }
@@ -201,7 +207,7 @@ bool checkAllDead(void) {
 bool checkStopCommend(void) {  
     static int i = 0;
     
-  if(Serial.available() > 0) {  // 커맨더로부터 명령대기 
+    if(Serial.available() > 0) {  // 커맨더로부터 명령대기 
         recieve = Serial.read();  // 수신된 명령을 recieve에 저장
         if(recieve == GAME_STOP) {  // 수신된 명령이 게임중지인지 확인  
             for(i = 0; i < NUM_T; i++) {
@@ -217,3 +223,20 @@ bool checkStopCommend(void) {
         return false;
     }
 }
+
+void moterdown_All(void) {
+    static int i = 0;
+  
+    for(i = 0; i < NUM_T; i++) {
+        target[i].moter.detach();
+    }
+}
+
+void moterup_All(void) {
+    static int i = 0;
+  
+    for(i = 0; i < NUM_T; i++) {
+        target[i].moter.attach(moter_pin[i]);  // 서보모터 등록
+    }
+}
+
