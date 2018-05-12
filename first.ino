@@ -4,22 +4,26 @@
 #define GAME_STOP 'b'      //    * b : 게임중지             *
 #define GAMEMODE_0 'c'    //     * c : 조율모드             *
 #define GAMEMODE_1 'd'   //      * d : 솔로플레이           *      
-#define NUM_T 7         //       *****************************
+#define NUM_T 3         //       *****************************
    
-const int moter_pin[7] = {A0, A1, A2, 6, 9, 10, 11};  // 서보모터 포트 
-const int senser_pin[7] = {2, 3, 4, 5, 7, 8, 12};  // 충격감지센서 포트 
-const int score[7] = {10, 10, 30, 30, 50, 50, 100};  // 고유점수 
-const int busser = 13;  // 부저
+const int moter_pin[3] = {A0, A1, A2};  // 서보모터 포트 
+const int senser_pin[3] = {2, 3, 4};  // 충격감지센서 포트 
+const int score[3] = {10, 30, 50};  // 고유점수 
+const int stand_array_Z[3] = {110, 0, 50};  // 과녁 영점계수 배열 ( 다운상태 )
+const int stand_array_C[3] = {10, 106, 160};  // 과녁 영점계수 배열 ( 업상태 )
+const int busser = 5;  // 부저
 char recieve;  // 커맨더에서 수신한 명령 저장용 변수 
  
 typedef struct target {
     Servo moter;
     int stat_stand;  // 기립 여부  
     int score;  // 고유점수  
+    int zero;
+    int stand_coefficient;  
 } Target;
  
-Servo moter[7];
-Target target[7];
+Servo moter[3];
+Target target[3];
  
 void gamemode_0(void);  // 솔로플레이  
 //void gamemode_1(void);  // 듀오플레이  
@@ -40,6 +44,8 @@ void setup(void) {
         resetTarget(&target[i]);
         target[i].score = score[i];  // 과녁별 고유점수 부가 
         target[i].moter = moter[i];  // 과녁별 서보모터객체 부여 
+        target[i].zero = stand_array_Z[i];  // 과녁별 영점조절
+        target[i].stand_coefficient = stand_array_C[i];  // 과녁별 영점조절
     }
     for(i = 0; i < NUM_T; i++) {
         pinMode(senser_pin[i], INPUT);  // 충격감지센서 등록 
@@ -59,7 +65,6 @@ void loop(void) {
             case GAME_START:
                 for(i = 0; i < NUM_T; i++) {
                     standup(i);
-                    
                 }
                 break;
             case GAME_STOP:
@@ -175,13 +180,13 @@ void resetTarget(Target * obj) {
  
 void standup(int pin) {
     Serial.println("업업업");
-    target[pin].moter.write(10);
+    target[pin].moter.write(target[pin].stand_coefficient);
     target[pin].stat_stand = 1;  // 기립상태 갱신  
 }
  
 void standown(int pin) {
     digitalWrite(busser, HIGH);
-    target[pin].moter.write(90);
+    target[pin].moter.write(target[pin].zero);
     target[pin].stat_stand = 0;  // 기립상태 갱신
     digitalWrite(busser, LOW); 
 }
