@@ -4,13 +4,13 @@
 #define GAME_STOP 'b'      //    * b : 게임중지             *
 #define GAMEMODE_0 'c'    //     * c : 조율모드             *
 #define GAMEMODE_1 'd'   //      * d : 솔로플레이           *      
-#define NUM_T 1      //       *****************************
+#define NUM_T 3      //       *****************************
    
 const int moter_pin[3] = {A0, A1, A2};  // 서보모터 포트 
 const int senser_pin[3] = {2, 3, 4};  // 충격감지센서 포트 
 const int score[3] = {10, 30, 50};  // 고유점수 
 const int stand_array_Z[3] = {120, 0, 55};  // 과녁 영점계수 배열 ( 다운상태 )
-const int stand_array_C[3] = {10, 106, 160};  // 과녁 영점계수 배열 ( 업상태 )
+const int stand_array_C[3] = {0, 106, 160};  // 과녁 영점계수 배열 ( 업상태 )
 const int busser = 5;  // 부저
 const int timeLimit = 10;  // 제한시간(초)
 char recieve;  // 커맨더에서 수신한 명령 저장용 변수 
@@ -52,9 +52,8 @@ void setup(void) {
     for(i = 0; i < NUM_T; i++) {
         pinMode(senser_pin[i], INPUT);  // 충격감지센서 등록 
     }
-    /*for(;;) {
-      Serial.println(digitalRead(senser_pin[0]));
-    }*/
+    moterup_All();
+    gamemode_0();
 }
  
 void loop(void) {
@@ -96,10 +95,14 @@ void loop(void) {
 
 void gamemode_0(void) {  // 조율모드
     static int i = 0;
-    static unsigned int c = 0;
-    static unsigned int p = 0;
-    c = 0;
-    p = 0;
+    static unsigned int c[3] = {0, };
+    static unsigned int p[3] = {0, };
+    c[0] = 0;
+    c[1] = 0;
+    c[2] = 0;
+    p[0] = 0;
+    p[1] = 0;
+    p[2] = 0;
     
     for(;;) {
         if(checkStopCommend() == true) {  // 커맨더로부터 게임중지 명령 왔는지 확인 
@@ -110,11 +113,11 @@ void gamemode_0(void) {  // 조율모드
                 target[i].stat_stand = 0;  // 해당 인덱스의 기립상태 갱신
                 Serial.print(target[i].score); Serial.println("점 흭득!");
                 for(;;) {
-                   c = millis();
-                   if(c - p >= 5000) {  // 5초 후에 ( 누적 )
+                   c[i] = millis();
+                   if(c[i] - p[i] >= 3000) {  // 5초 후에 ( 누적 )
                     standup(i);  // 스탠드업
                     target[i].stat_stand = 1;
-                    p = c;
+                    p[i] = c[i];
                     Serial.print(i); Serial.println("번째 업");
                     break;
                   }
